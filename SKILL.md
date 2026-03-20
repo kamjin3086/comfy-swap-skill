@@ -15,154 +15,165 @@ comfy-swap health
 
 | Output | Action |
 |--------|--------|
-| `status: ok` + `comfyui.reachable: true` | Ready, check plugin status below |
-| Command not found | [Install binary](#installation) |
-| Connection refused | Start server: `comfy-swap serve` |
-| `comfyui.reachable: false` | Configure: `comfy-swap config set --comfyui-url <url>` |
+| `status: ok` | Ready to use |
+| Command not found | Run [Auto-Install](#auto-install-binary) |
+| Connection refused | `comfy-swap serve -d` |
+| `comfyui.reachable: false` | `comfy-swap config set --comfyui-url <url>` |
 
-## Installation
+---
 
-### Step 1: Get Binary
+## Auto-Install Binary
 
-**Option A: Download Release** (recommended)
-- Download from [Releases](https://github.com/kamjin3086/comfy-swap/releases)
+**If `comfy-swap` command not found, run ONE of these scripts to install automatically:**
 
-**Option B: Build from Source**
-```bash
-git clone https://github.com/kamjin3086/comfy-swap.git
-cd comfy-swap
-go build -o comfy-swap .   # Linux/macOS
-go build -o comfy-swap.exe .   # Windows
-```
+### Windows (PowerShell)
 
-### Step 2: Add to PATH (recommended for global access)
-
-**Windows (PowerShell as Admin):**
 ```powershell
-# Option 1: Copy to existing PATH directory (simplest)
-Copy-Item comfy-swap.exe -Destination "$env:LOCALAPPDATA\Microsoft\WindowsApps\"
-
-# Option 2: Add custom directory to PATH permanently
-$binPath = "D:\path\to\comfy-swap-dir"
-[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$binPath", "User")
-# Restart terminal to apply
-```
-
-**Linux / macOS:**
-```bash
-# Option 1: Move to standard PATH directory
-sudo mv comfy-swap /usr/local/bin/
-sudo chmod +x /usr/local/bin/comfy-swap
-
-# Option 2: Add to shell profile
-echo 'export PATH="$PATH:/path/to/comfy-swap-dir"' >> ~/.bashrc  # or ~/.zshrc
-source ~/.bashrc
-```
-
-**Verify installation:**
-```bash
+$version = "v0.1.2"
+$url = "https://github.com/kamjin3086/comfy-swap/releases/download/$version/comfy-swap-windows-amd64.exe"
+$dest = "$env:LOCALAPPDATA\Microsoft\WindowsApps\comfy-swap.exe"
+Invoke-WebRequest -Uri $url -OutFile $dest
+Write-Host "Installed to $dest"
 comfy-swap version
-comfy-swap health
 ```
 
-### Step 3: Start API Server
-
-The server must be running for CLI commands and API calls to work:
+### Linux (amd64)
 
 ```bash
-# Foreground (blocks terminal)
-comfy-swap serve
+VERSION="v0.1.2"
+curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-linux-amd64" -o /tmp/comfy-swap
+sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
+sudo chmod +x /usr/local/bin/comfy-swap
+comfy-swap version
+```
 
-# Background daemon (recommended for AI agents)
+### Linux (arm64)
+
+```bash
+VERSION="v0.1.2"
+curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-linux-arm64" -o /tmp/comfy-swap
+sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
+sudo chmod +x /usr/local/bin/comfy-swap
+comfy-swap version
+```
+
+### macOS (Apple Silicon)
+
+```bash
+VERSION="v0.1.2"
+curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-darwin-arm64" -o /tmp/comfy-swap
+sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
+sudo chmod +x /usr/local/bin/comfy-swap
+comfy-swap version
+```
+
+### macOS (Intel)
+
+```bash
+VERSION="v0.1.2"
+curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-darwin-amd64" -o /tmp/comfy-swap
+sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
+sudo chmod +x /usr/local/bin/comfy-swap
+comfy-swap version
+```
+
+### Fallback: Build from Source (requires Go 1.21+)
+
+```bash
+git clone https://github.com/kamjin3086/comfy-swap.git /tmp/comfy-swap-src
+cd /tmp/comfy-swap-src
+go build -o comfy-swap .
+sudo mv comfy-swap /usr/local/bin/
+comfy-swap version
+```
+
+---
+
+## Troubleshooting
+
+### Problem: "command not found" after install
+
+| OS | Solution |
+|----|----------|
+| Windows | Restart terminal, or use full path: `$env:LOCALAPPDATA\Microsoft\WindowsApps\comfy-swap.exe` |
+| Linux/macOS | Check: `ls -la /usr/local/bin/comfy-swap` and `echo $PATH` |
+
+### Problem: "connection refused"
+
+Server not running. Start it:
+```bash
 comfy-swap serve -d
-# Returns immediately, server runs in background
-
-# Stop daemon
-comfy-swap stop
 ```
 
-Server runs on http://localhost:8189. Data stored in OS standard location automatically.
+### Problem: "comfyui.reachable: false"
 
-**For production (systemd/service):** see `references/setup.md`
-
-### Step 4: Configure ComfyUI Connection
-
+ComfyUI URL not configured or ComfyUI not running:
 ```bash
+# Check current config
+comfy-swap config get
+
+# Set correct URL (ask user for their ComfyUI URL if unknown)
 comfy-swap config set --comfyui-url http://localhost:8188
-comfy-swap health  # Verify: comfyui.reachable: true
 ```
 
-## Plugin Setup
-
-Check if ComfyUI plugin is installed:
-```bash
-comfy-swap plugin-status
-```
-
-| Status | Action |
-|--------|--------|
-| `connected` | Ready to export workflows |
-| `not_installed` | Install plugin below |
-| `not_configured` | Configure ComfyUI URL first |
-
-### Install Plugin (Local ComfyUI)
+### Problem: "plugin not_installed"
 
 ```bash
-# Find ComfyUI custom_nodes directory, then:
+# Find ComfyUI custom_nodes path (ask user if unknown)
+# Common paths:
+#   Windows: C:\ComfyUI\custom_nodes, D:\ComfyUI\custom_nodes
+#   Linux: ~/ComfyUI/custom_nodes, /opt/ComfyUI/custom_nodes
+
 comfy-swap install-plugin /path/to/ComfyUI/custom_nodes
-
-# Restart ComfyUI, then verify:
-comfy-swap plugin-status
+# Then restart ComfyUI
 ```
 
-Common paths:
-- Windows: `C:\ComfyUI\custom_nodes`, `D:\ComfyUI\custom_nodes`
-- Linux/macOS: `~/ComfyUI/custom_nodes`
+### Problem: "no workflows found"
 
-For **remote ComfyUI**, see `references/setup.md` (Step 3).
+User needs to export workflow from ComfyUI first:
+1. In ComfyUI: Right-click canvas → Export to ComfySwap
+2. Then sync: `comfy-swap import --sync`
 
-## Running Workflows
+### Problem: Download blocked / network issue
+
+Ask user to manually download from: https://github.com/kamjin3086/comfy-swap/releases
+
+---
+
+## Standard Workflow
+
+After installation is verified:
 
 ```bash
-# 1. List available workflows
-comfy-swap list
-# If empty → export workflow in ComfyUI (right-click → Export to ComfySwap), then:
-#   comfy-swap import --sync
+# 1. Ensure server running
+comfy-swap serve -d
 
-# 2. Check parameters
+# 2. List workflows
+comfy-swap list
+
+# 3. Check workflow parameters
 comfy-swap info <workflow_id>
 
-# 3. Run and save output
+# 4. Run workflow
 comfy-swap run <workflow_id> prompt="a cat" seed=42 --wait --save ./output/
+
+# 5. Verify output
+ls ./output/
 ```
-
-**After run completes**, verify and report:
-- Exit code 0 → success; non-zero → check stderr
-- Output JSON includes `prompt_id`, `status`, and `files` (saved paths)
-- Confirm files exist: `ls ./output/`
-- On failure: check `comfy-swap logs --workflow <id> --limit 1` for error details
-
-## When to Read Additional References
-
-| Task | Read |
-|------|------|
-| First-time setup / no workflows | `references/setup.md` |
-| Remote ComfyUI plugin installation | `references/setup.md` (Step 3) |
-| Modify workflow API parameters | `references/workflow-management.md` |
-| Full CLI reference | `references/cli-reference.md` |
-| Troubleshooting errors | `references/cli-reference.md` (Error Handling section) |
 
 ## Core Commands
 
 | Command | Purpose |
 |---------|---------|
+| `serve -d` | Start server as daemon |
+| `stop` | Stop server |
 | `health` | Check server + ComfyUI status |
-| `plugin-status` | Check if ComfyUI plugin is installed |
-| `install-plugin <path>` | Install plugin to ComfyUI custom_nodes |
+| `plugin-status` | Check plugin installation |
+| `install-plugin <path>` | Install ComfyUI plugin |
 | `list` | List workflows |
 | `info <id>` | Show workflow parameters |
 | `run <id> key=value --wait --save ./` | Execute workflow |
-| `workflow nodes/params/add-param/...` | Manage API parameters |
+| `import --sync` | Sync pending workflows from ComfyUI |
 | `logs` | View request history |
 
 ## Parameter Format
@@ -173,3 +184,12 @@ seed=42                # integer
 cfg=7.5                # float
 image=@./input.png     # image file (@ prefix)
 ```
+
+## When to Read Additional References
+
+| Task | Read |
+|------|------|
+| Detailed setup guide | `references/setup.md` |
+| Remote ComfyUI setup | `references/setup.md` (Step 3) |
+| Modify workflow parameters | `references/workflow-management.md` |
+| Full CLI reference | `references/cli-reference.md` |
