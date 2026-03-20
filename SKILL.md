@@ -21,6 +21,10 @@ comfy-swap health
 | `comfyui.reachable: false` | `comfy-swap config set --comfyui-url <url>` |
 | Plugin `not_installed` | Read `references/setup.md` → Install Plugin |
 
+## Upgrade
+
+Check and upgrade to latest version. See `references/setup.md` → Upgrade section for full procedure.
+
 ---
 
 ## Running Workflows
@@ -99,5 +103,6 @@ comfy-swap workflow remove-param <id> --name unwanted
 | When | Read |
 |------|------|
 | First-time setup, install issues | `references/setup.md` |
+| Upgrade to latest version | `references/setup.md` → Upgrade |
 | Full CLI commands | `references/cli-reference.md` |
 | Advanced workflow management | `references/workflow-management.md` |

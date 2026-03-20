@@ -20,7 +20,20 @@ comfy-swap stop                            # Stop running server
 comfy-swap health                          # Check server status
 comfy-swap plugin-status                   # Check if ComfyUI plugin is installed
 comfy-swap install-plugin <custom_nodes_path>
+comfy-swap version                         # Show version
+comfy-swap version --json                  # JSON output
 ```
+
+## Upgrade
+
+```bash
+comfy-swap upgrade --check                 # Check if update available
+comfy-swap upgrade --check --json          # JSON output for automation
+comfy-swap upgrade --download              # Download new version to temp
+comfy-swap upgrade --download --json       # JSON output with paths
+```
+
+See `setup.md` → Upgrade section for complete upgrade procedure.
 
 ## Configuration
 
@@ -120,6 +133,8 @@ comfy-swap logs -q                          # Just total count
 | `ComfyUI unreachable` | ComfyUI down | Check ComfyUI is running |
 | `timeout` | Generation slow | Increase `--timeout` |
 | `no pending workflows` | Nothing to sync | User must export from ComfyUI first |
+| `upgrade download failed` | Network issue | Check network, retry |
+| `hash mismatch` | Corrupted download | Re-run `upgrade --download` |
 
 ## REST API Mapping
 

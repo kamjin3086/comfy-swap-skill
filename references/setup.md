@@ -1,6 +1,6 @@
 # Comfy-Swap Setup
 
-First-time setup and troubleshooting guide.
+First-time setup, upgrade, and troubleshooting guide.
 
 ---
 
@@ -27,6 +27,109 @@ source ~/.bashrc
 **Specific version:** `python "<skill_base>/scripts/install.py" v0.1.3`
 
 **Verify:** `comfy-swap version`
+
+---
+
+## Upgrade
+
+Upgrade to latest version using built-in commands. All steps have JSON output for reliable parsing.
+
+### Step 1: Check for Updates
+
+```bash
+comfy-swap upgrade --check --json
+```
+
+**Expected output:**
+```json
+{
+  "current": "0.1.0",
+  "latest": "0.1.5",
+  "update_available": true,
+  "download_url": "https://...",
+  "sha256_url": "https://..."
+}
+```
+
+| Field | Check |
+|-------|-------|
+| `update_available: false` | Already latest → STOP |
+| `update_available: true` | Continue to Step 2 |
+| `error` field present | Report error to user |
+
+### Step 2: Download New Version
+
+```bash
+comfy-swap upgrade --download --json
+```
+
+**Expected output:**
+```json
+{
+  "success": true,
+  "download_path": "C:\\Users\\...\\comfy-swap-new.exe",
+  "sha256": "abc123...",
+  "hash_verified": true,
+  "version": "0.1.5",
+  "current_exe": "C:\\Users\\...\\comfy-swap.exe"
+}
+```
+
+| Field | Check |
+|-------|-------|
+| `success: false` | Report error, STOP |
+| `hash_verified: false` | Warn user about hash mismatch, ask to continue |
+| `success: true` | Continue to Step 3 |
+
+### Step 3: Stop Server (if running)
+
+```bash
+comfy-swap stop
+```
+
+Ignore errors if server not running.
+
+### Step 4: Replace Binary
+
+Use the paths from Step 2 output.
+
+**Windows (PowerShell):**
+```powershell
+Move-Item -Force "<download_path>" "<current_exe>"
+```
+
+**Linux/macOS:**
+```bash
+mv "<download_path>" "<current_exe>"
+chmod +x "<current_exe>"
+```
+
+### Step 5: Verify Upgrade
+
+```bash
+comfy-swap version --json
+```
+
+**Expected output:**
+```json
+{
+  "version": "0.1.5",
+  "os": "windows",
+  "arch": "amd64"
+}
+```
+
+| Check | Action |
+|-------|--------|
+| `version` matches `latest` from Step 1 | SUCCESS |
+| `version` still old | Replace failed, check permissions |
+
+### Step 6: Restart Server
+
+```bash
+comfy-swap serve -d
+comfy-swap health
+```
 
 ---
 
