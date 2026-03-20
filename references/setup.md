@@ -1,238 +1,141 @@
 # Comfy-Swap Setup
 
-Complete setup guide for AI agents.
+First-time setup and troubleshooting guide.
 
-## 0. Installation (if not installed)
+---
 
-### Check if already installed
+## Install Binary
+
+If `comfy-swap` command not found:
+
 ```bash
-comfy-swap version
-# If command works → skip to Step 1
-# If "command not found" → install below
+python "<skill_base>/scripts/install.py"
 ```
 
-### Download or Build
+This script auto-detects platform, downloads latest release, installs to user directory (no sudo).
 
-**Option A: Download Release**
-- Get latest binary from [Releases](https://github.com/kamjin3086/comfy-swap/releases)
-- Extract to a directory (e.g., `D:\tools\comfy-swap` or `/opt/comfy-swap`)
+**Installation paths:**
+- Windows: `%LOCALAPPDATA%\Microsoft\WindowsApps\`
+- Linux/macOS: `~/.local/bin/`
 
-**Option B: Build from Source**
+**Linux/macOS PATH issue:** If command still not found after install:
 ```bash
-git clone https://github.com/kamjin3086/comfy-swap.git
-cd comfy-swap
-go build -o comfy-swap .      # Linux/macOS
-go build -o comfy-swap.exe .  # Windows
-```
-
-### Add to PATH (Recommended)
-
-Adding to PATH enables `comfy-swap` command from any directory.
-
-**Windows (PowerShell - run as Administrator):**
-```powershell
-# Quick: Copy to existing PATH directory
-Copy-Item .\comfy-swap.exe -Destination "$env:LOCALAPPDATA\Microsoft\WindowsApps\"
-
-# Or: Add custom directory to User PATH permanently
-$binDir = "D:\tools\comfy-swap"  # adjust to your path
-$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
-if ($currentPath -notlike "*$binDir*") {
-    [Environment]::SetEnvironmentVariable("Path", "$currentPath;$binDir", "User")
-    Write-Host "Added to PATH. Restart terminal to apply."
-}
-```
-
-**Linux / macOS:**
-```bash
-# Quick: Move to standard bin directory
-sudo mv comfy-swap /usr/local/bin/
-sudo chmod +x /usr/local/bin/comfy-swap
-
-# Or: Add to shell profile
-COMFY_SWAP_DIR="/path/to/comfy-swap-dir"
-echo "export PATH=\"\$PATH:$COMFY_SWAP_DIR\"" >> ~/.bashrc  # or ~/.zshrc
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
 source ~/.bashrc
 ```
 
-**Verify:**
+**Specific version:** `python "<skill_base>/scripts/install.py" v0.1.3`
+
+**Verify:** `comfy-swap version`
+
+---
+
+## Start Server
+
 ```bash
-# Open new terminal, then:
-comfy-swap version
+comfy-swap serve -d     # Start daemon (returns immediately)
+comfy-swap health       # Should show status: ok
 ```
 
-## 1. Start Server
+**Stop server:** `comfy-swap stop`
 
-**Quick start (daemon mode - recommended for AI agents):**
-```bash
-comfy-swap serve -d
-# Returns immediately, server runs in background
-# Server: http://localhost:8189
+---
 
-# Check if running
-comfy-swap health
+## Configure ComfyUI URL
 
-# Stop daemon
-comfy-swap stop
-```
-
-**Foreground mode (for debugging):**
-```bash
-comfy-swap serve
-# Blocks terminal, Ctrl+C to stop
-```
-
-**Production: Run as System Service**
-
-*Linux (systemd):*
-```bash
-sudo tee /etc/systemd/system/comfy-swap.service > /dev/null <<EOF
-[Unit]
-Description=Comfy-Swap API Server
-After=network.target
-
-[Service]
-ExecStart=/usr/local/bin/comfy-swap serve
-Restart=always
-User=$USER
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable --now comfy-swap
-sudo systemctl status comfy-swap
-```
-
-*Windows (scheduled task for auto-start):*
-```powershell
-# Create scheduled task to run at login
-$action = New-ScheduledTaskAction -Execute "comfy-swap.exe" -Argument "serve"
-$trigger = New-ScheduledTaskTrigger -AtLogon
-Register-ScheduledTask -TaskName "ComfySwap" -Action $action -Trigger $trigger
-```
-
-## 2. Configure ComfyUI URL
-
-Check if config already exists before overwriting:
-```bash
-comfy-swap config get
-# If settings exist and correct → skip this step
-# If settings exist but wrong URL → proceed to update below
-# If "not initialized" → proceed to set below
-```
-
-Set or update:
 ```bash
 comfy-swap config set --comfyui-url http://localhost:8188
+comfy-swap health       # Should show comfyui.reachable: true
 ```
 
-Verify:
-```bash
-comfy-swap health
-# Should show comfyui.reachable: true
-```
+If ComfyUI runs on a different machine, ask user for the URL.
 
-## 3. Install ComfyUI Plugin
+---
 
-Check current status:
-```bash
-comfy-swap plugin-status
-# connected    → skip to Step 4
-# not_installed → continue below
-```
+## Install Plugin
 
-### 3a. Local ComfyUI (same machine) — Auto-Install
-
-Find the ComfyUI `custom_nodes` directory, then install directly:
-
-**Windows — search common locations:**
-```powershell
-# Check common paths in order
-$candidates = @(
-    "$env:USERPROFILE\ComfyUI\custom_nodes",
-    "C:\ComfyUI\custom_nodes",
-    "D:\ComfyUI\custom_nodes",
-    "$env:USERPROFILE\Desktop\ComfyUI\custom_nodes",
-    "$env:USERPROFILE\Documents\ComfyUI\custom_nodes"
-)
-# Also search for running ComfyUI process to find actual path
-Get-Process python* -ErrorAction SilentlyContinue |
-    Select-Object -ExpandProperty Path |
-    ForEach-Object { Split-Path $_ -Parent }
-```
-
-**Linux/macOS — search common locations:**
-```bash
-# Find custom_nodes directories
-find ~ /opt /usr/local -type d -name "custom_nodes" -path "*/ComfyUI/*" 2>/dev/null
-# Also check running processes
-ps aux | grep -i "[m]ain.py" | grep -i comfy
-```
-
-**Install once path is found:**
-```bash
-comfy-swap install-plugin /path/to/ComfyUI/custom_nodes
-```
-
-After installing, refresh or restart ComfyUI, then verify:
+Check status:
 ```bash
 comfy-swap plugin-status
-# Should show status: connected
 ```
 
-### 3b. Remote ComfyUI (different machine)
+| Status | Action |
+|--------|--------|
+| `connected` | Ready |
+| `not_installed` | Install below |
+| `not_configured` | Configure ComfyUI URL first |
 
-When ComfyUI runs on a remote server, the AI agent cannot directly access its filesystem. Options:
+### Auto-Install (AI agent runs this)
 
-1. **Ask the user** to run the install command on the remote machine:
-   ```bash
-   # On the remote machine where ComfyUI is installed:
-   comfy-swap install-plugin /path/to/ComfyUI/custom_nodes
-   ```
-
-2. **Download plugin ZIP** and have user place it manually:
-   ```bash
-   # Download from comfy-swap server
-   curl -o comfy-swap-plugin.zip http://localhost:8189/api/download-plugin
-   # Transfer to remote machine and extract to ComfyUI/custom_nodes/
-   ```
-
-3. **If user has SSH access**, the AI agent can install remotely:
-   ```bash
-   # Copy binary to remote, then run install-plugin
-   scp comfy-swap user@remote:/tmp/
-   ssh user@remote "/tmp/comfy-swap install-plugin /path/to/ComfyUI/custom_nodes"
-   ```
-
-## 4. Import Workflows
-
-**Option A: Sync from ComfyUI** (user exports first via right-click → Export to ComfySwap)
-```bash
-comfy-swap import --sync
-# Verify: output shows synced count > 0
-```
-
-**Option B: Import from JSON file**
-```bash
-comfy-swap import workflow.json
-# Verify: output shows "imported" with workflow_id
-```
-
-## 5. Final Verification
+Try to find ComfyUI `custom_nodes` path and install:
 
 ```bash
-comfy-swap list           # Should show imported workflows
-comfy-swap health         # comfyui.reachable: true
-comfy-swap plugin-status  # status: connected
+comfy-swap install-plugin <custom_nodes_path>
 ```
 
-## Environment Variables (Optional)
+**Common paths to try:**
+- Windows: `C:\ComfyUI\custom_nodes`, `D:\ComfyUI\custom_nodes`
+- Linux: `~/ComfyUI/custom_nodes`, `/opt/ComfyUI/custom_nodes`
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `COMFY_SWAP_URL` | Server URL | `http://localhost:8189` |
-| `COMFY_SWAP_DATA` | Data directory | OS-specific |
+If path unknown, ask user.
 
-These variables contain no secrets. If using custom values, set them in your shell profile rather than passing inline to avoid shell history clutter. Do not commit `.env` files containing custom paths to version control.
+After install, **user must restart ComfyUI**, then verify:
+```bash
+comfy-swap plugin-status    # Should show: connected
+```
+
+### Manual Install (if auto-install fails)
+
+If `install-plugin` fails or ComfyUI is on a remote machine, tell user:
+
+> I couldn't install the plugin automatically. Please install it manually:
+> 
+> **Option A: Git clone (recommended)**
+> ```bash
+> cd /path/to/ComfyUI/custom_nodes
+> git clone https://github.com/kamjin3086/ComfyUI-ComfySwap.git
+> ```
+> 
+> **Option B: Download ZIP**
+> 1. Download from: https://github.com/kamjin3086/ComfyUI-ComfySwap/archive/refs/heads/main.zip
+> 2. Extract to `ComfyUI/custom_nodes/ComfyUI-ComfySwap/`
+> 
+> After installing, restart ComfyUI and let me know.
+
+---
+
+## Import Workflows
+
+Check if workflows exist:
+```bash
+comfy-swap list
+```
+
+If empty, **user must export from ComfyUI manually.** Tell them:
+
+> No workflows found. Please export a workflow from ComfyUI:
+> 
+> 1. Open ComfyUI in your browser (usually http://localhost:8188)
+> 2. Load or create a workflow you want to use as an API
+> 3. Right-click on the canvas → **Export to ComfySwap**
+> 4. Configure which parameters to expose, then click **Swap**
+> 5. Verify at http://localhost:8189 - the workflow should appear
+> 6. **Let me know when done** so I can continue
+
+After user confirms:
+```bash
+comfy-swap list    # Should now show the workflow
+```
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `command not found` | Run install script, check PATH |
+| `connection refused` | `comfy-swap serve -d` |
+| `comfyui.reachable: false` | Check ComfyUI is running, verify URL |
+| `plugin not_installed` | Install plugin, restart ComfyUI |
+| `no workflows` | User exports from ComfyUI |
+| Download fails | Check network, try manual download |
