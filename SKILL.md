@@ -30,9 +30,20 @@ If `comfy-swap` command not found, run:
 python "<skill_base>/scripts/install.py"
 ```
 
-This script auto-detects platform, downloads latest release, and installs to PATH.
+This script:
+- Auto-detects platform (Windows/Linux/macOS, amd64/arm64)
+- Downloads latest release from GitHub
+- Installs to user directory (no sudo required)
+  - Windows: `%LOCALAPPDATA%\Microsoft\WindowsApps\`
+  - Linux/macOS: `~/.local/bin/`
 
-For specific version: `python "<skill_base>/scripts/install.py" v0.1.2`
+**Linux/macOS only:** If script reports PATH not configured, run:
+```bash
+echo 'export PATH="$PATH:$HOME/.local/bin"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+For specific version: `python "<skill_base>/scripts/install.py" v0.1.3`
 
 ---
 

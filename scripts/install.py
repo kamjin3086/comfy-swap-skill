@@ -78,18 +78,30 @@ def get_platform():
 
 
 def get_install_dir():
-    """Get installation directory."""
+    """Get installation directory (no sudo required)."""
     system = platform.system().lower()
     if system == "windows":
         return os.path.join(os.environ.get("LOCALAPPDATA", ""), "Microsoft", "WindowsApps")
     else:
+        # Always use ~/.local/bin to avoid sudo
         local_bin = os.path.expanduser("~/.local/bin")
-        if os.path.isdir(local_bin) and os.access(local_bin, os.W_OK):
-            return local_bin
-        if os.access("/usr/local/bin", os.W_OK):
-            return "/usr/local/bin"
         os.makedirs(local_bin, exist_ok=True)
         return local_bin
+
+
+def ensure_path_configured(install_dir):
+    """Check if install_dir is in PATH, print hint if not."""
+    path_dirs = os.environ.get("PATH", "").split(os.pathsep)
+    if install_dir not in path_dirs:
+        shell = os.environ.get("SHELL", "")
+        if "zsh" in shell:
+            rc_file = "~/.zshrc"
+        else:
+            rc_file = "~/.bashrc"
+        print(f"\nNOTE: {install_dir} is not in PATH.")
+        print(f"Add this line to {rc_file}:")
+        print(f'  export PATH="$PATH:{install_dir}"')
+        print(f"Then run: source {rc_file}")
 
 
 def fetch_url(url, timeout=30):
@@ -257,7 +269,8 @@ def main():
         if os_name != "windows":
             os.chmod(binary_path, os.stat(binary_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
     except PermissionError:
-        print(f"ERROR: Permission denied. Try running with sudo/admin.")
+        print(f"ERROR: Permission denied writing to {binary_path}")
+        print("This should not happen with user-local install. Check directory permissions.")
         return 1
     except Exception as e:
         print(f"ERROR: Failed to install: {e}")
@@ -270,11 +283,15 @@ def main():
     if new_version:
         print(f"SUCCESS: comfy-swap {new_version} installed")
         print(f"Location: {binary_path}")
-        return 0
     else:
         print("WARNING: Could not verify version, but binary was installed.")
         print(f"Location: {binary_path}")
-        return 0
+    
+    # Check PATH on Linux/macOS
+    if os_name != "windows":
+        ensure_path_configured(install_dir)
+    
+    return 0
 
 
 if __name__ == "__main__":
