@@ -63,13 +63,26 @@ comfy-swap version
 
 ## 1. Start Server
 
+**Quick start (daemon mode - recommended for AI agents):**
 ```bash
-comfy-swap serve
-# Server runs on http://localhost:8189
-# Keep this running in a dedicated terminal or as a service
+comfy-swap serve -d
+# Returns immediately, server runs in background
+# Server: http://localhost:8189
+
+# Check if running
+comfy-swap health
+
+# Stop daemon
+comfy-swap stop
 ```
 
-**Production: Run as Background Service**
+**Foreground mode (for debugging):**
+```bash
+comfy-swap serve
+# Blocks terminal, Ctrl+C to stop
+```
+
+**Production: Run as System Service**
 
 *Linux (systemd):*
 ```bash
@@ -92,12 +105,12 @@ sudo systemctl enable --now comfy-swap
 sudo systemctl status comfy-swap
 ```
 
-*Windows (background process):*
+*Windows (scheduled task for auto-start):*
 ```powershell
-# Run in background (simple)
-Start-Process -WindowStyle Hidden comfy-swap -ArgumentList "serve"
-
-# Or create a scheduled task to start on login
+# Create scheduled task to run at login
+$action = New-ScheduledTaskAction -Execute "comfy-swap.exe" -Argument "serve"
+$trigger = New-ScheduledTaskTrigger -AtLogon
+Register-ScheduledTask -TaskName "ComfySwap" -Action $action -Trigger $trigger
 ```
 
 ## 2. Configure ComfyUI URL

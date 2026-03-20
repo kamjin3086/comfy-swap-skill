@@ -70,21 +70,20 @@ comfy-swap health
 The server must be running for CLI commands and API calls to work:
 
 ```bash
+# Foreground (blocks terminal)
 comfy-swap serve
-# Server runs on http://localhost:8189
-# Data stored in OS standard location automatically
+
+# Background daemon (recommended for AI agents)
+comfy-swap serve -d
+# Returns immediately, server runs in background
+
+# Stop daemon
+comfy-swap stop
 ```
 
-**Run as background service (production):**
-```bash
-# Linux (systemd)
-sudo cp comfy-swap /usr/local/bin/
-# Create /etc/systemd/system/comfy-swap.service, then:
-sudo systemctl enable --now comfy-swap
+Server runs on http://localhost:8189. Data stored in OS standard location automatically.
 
-# Windows (as service or scheduled task)
-# Or simply run in a dedicated terminal/tmux session
-```
+**For production (systemd/service):** see `references/setup.md`
 
 ### Step 4: Configure ComfyUI Connection
 

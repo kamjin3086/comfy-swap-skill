@@ -14,8 +14,10 @@ Complete command reference for Comfy-Swap.
 ## Server & Plugin
 
 ```bash
-comfy-swap serve [--port 8189]
-comfy-swap health
+comfy-swap serve [--port 8189]             # Start server (foreground)
+comfy-swap serve -d                        # Start as background daemon
+comfy-swap stop                            # Stop running server
+comfy-swap health                          # Check server status
 comfy-swap plugin-status                   # Check if ComfyUI plugin is installed
 comfy-swap install-plugin <custom_nodes_path>
 ```
