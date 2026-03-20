@@ -83,11 +83,19 @@ Common paths: `C:\ComfyUI\custom_nodes`, `~/ComfyUI/custom_nodes`
 comfy-swap list    # Check if any workflows exist
 ```
 
-If empty, tell user: "In ComfyUI, right-click canvas → Export to ComfySwap"
+If empty, **ask user to do this manually in ComfyUI:**
 
-Then sync:
+> Please export a workflow in ComfyUI:
+> 1. Open ComfyUI in your browser
+> 2. Load or create a workflow you want to use
+> 3. Right-click on the canvas → **Export to ComfySwap**
+> 4. Configure parameters in the dialog, then click **Swap**
+> 5. You can verify at http://localhost:8189 - the workflow should appear in the list
+> 6. **Let me know when you're done** so I can continue
+
+After user confirms, verify:
 ```bash
-comfy-swap import --sync
+comfy-swap list    # Should now show the exported workflow
 ```
 
 ---
