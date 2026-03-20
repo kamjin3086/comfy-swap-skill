@@ -7,176 +7,115 @@ description: Use Comfy-Swap CLI to run ComfyUI workflows, manage workflow parame
 
 CLI tool for running ComfyUI workflows as stable APIs. Respond in the user's language.
 
-## Quick Check
-
-```bash
-comfy-swap health
-```
-
-| Output | Action |
-|--------|--------|
-| `status: ok` | Ready to use |
-| Command not found | Run [Auto-Install](#auto-install-binary) |
-| Connection refused | `comfy-swap serve -d` |
-| `comfyui.reachable: false` | `comfy-swap config set --comfyui-url <url>` |
+**Skill base directory:** Use this path to resolve script references below.
 
 ---
 
-## Auto-Install Binary
+## Step 1: Check Status
 
-**If `comfy-swap` command not found, run ONE of these scripts to install automatically:**
+Run the check script first to diagnose the current state:
 
-### Windows (PowerShell)
-
+**Windows:**
 ```powershell
-$version = "v0.1.2"
-$url = "https://github.com/kamjin3086/comfy-swap/releases/download/$version/comfy-swap-windows-amd64.exe"
-$dest = "$env:LOCALAPPDATA\Microsoft\WindowsApps\comfy-swap.exe"
-Invoke-WebRequest -Uri $url -OutFile $dest
-Write-Host "Installed to $dest"
-comfy-swap version
+powershell -ExecutionPolicy Bypass -File "<skill_base>/scripts/check.ps1"
 ```
 
-### Linux (amd64)
-
+**Linux/macOS:**
 ```bash
-VERSION="v0.1.2"
-curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-linux-amd64" -o /tmp/comfy-swap
-sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
-sudo chmod +x /usr/local/bin/comfy-swap
-comfy-swap version
+bash "<skill_base>/scripts/check.sh"
 ```
 
-### Linux (arm64)
-
-```bash
-VERSION="v0.1.2"
-curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-linux-arm64" -o /tmp/comfy-swap
-sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
-sudo chmod +x /usr/local/bin/comfy-swap
-comfy-swap version
-```
-
-### macOS (Apple Silicon)
-
-```bash
-VERSION="v0.1.2"
-curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-darwin-arm64" -o /tmp/comfy-swap
-sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
-sudo chmod +x /usr/local/bin/comfy-swap
-comfy-swap version
-```
-
-### macOS (Intel)
-
-```bash
-VERSION="v0.1.2"
-curl -L "https://github.com/kamjin3086/comfy-swap/releases/download/$VERSION/comfy-swap-darwin-amd64" -o /tmp/comfy-swap
-sudo mv /tmp/comfy-swap /usr/local/bin/comfy-swap
-sudo chmod +x /usr/local/bin/comfy-swap
-comfy-swap version
-```
-
-### Fallback: Build from Source (requires Go 1.21+)
-
-```bash
-git clone https://github.com/kamjin3086/comfy-swap.git /tmp/comfy-swap-src
-cd /tmp/comfy-swap-src
-go build -o comfy-swap .
-sudo mv comfy-swap /usr/local/bin/
-comfy-swap version
-```
+The script returns JSON with `issues` and `actions` arrays. If `issues` is empty, skip to [Running Workflows](#running-workflows).
 
 ---
 
-## Troubleshooting
+## Step 2: Fix Issues
 
-### Problem: "command not found" after install
+### Issue: "comfy-swap binary not installed"
 
-| OS | Solution |
-|----|----------|
-| Windows | Restart terminal, or use full path: `$env:LOCALAPPDATA\Microsoft\WindowsApps\comfy-swap.exe` |
-| Linux/macOS | Check: `ls -la /usr/local/bin/comfy-swap` and `echo $PATH` |
+Run the install script (auto-detects platform, downloads latest, installs to PATH):
 
-### Problem: "connection refused"
+**Windows:**
+```powershell
+powershell -ExecutionPolicy Bypass -File "<skill_base>/scripts/install.ps1"
+```
 
-Server not running. Start it:
+**Linux/macOS:**
+```bash
+bash "<skill_base>/scripts/install.sh"
+```
+
+### Issue: "Server not running"
+
 ```bash
 comfy-swap serve -d
 ```
 
-### Problem: "comfyui.reachable: false"
+### Issue: "ComfyUI not reachable"
 
-ComfyUI URL not configured or ComfyUI not running:
+Ask user for their ComfyUI URL, then:
 ```bash
-# Check current config
-comfy-swap config get
-
-# Set correct URL (ask user for their ComfyUI URL if unknown)
-comfy-swap config set --comfyui-url http://localhost:8188
+comfy-swap config set --comfyui-url <user_provided_url>
 ```
 
-### Problem: "plugin not_installed"
+Common URLs: `http://localhost:8188`, `http://127.0.0.1:8188`
 
+### Issue: "ComfyUI plugin not installed"
+
+Ask user for their ComfyUI `custom_nodes` path, then:
 ```bash
-# Find ComfyUI custom_nodes path (ask user if unknown)
-# Common paths:
-#   Windows: C:\ComfyUI\custom_nodes, D:\ComfyUI\custom_nodes
-#   Linux: ~/ComfyUI/custom_nodes, /opt/ComfyUI/custom_nodes
-
-comfy-swap install-plugin /path/to/ComfyUI/custom_nodes
-# Then restart ComfyUI
+comfy-swap install-plugin <custom_nodes_path>
 ```
 
-### Problem: "no workflows found"
+Common paths:
+- Windows: `C:\ComfyUI\custom_nodes`, `D:\ComfyUI\custom_nodes`
+- Linux: `~/ComfyUI/custom_nodes`, `/opt/ComfyUI/custom_nodes`
 
-User needs to export workflow from ComfyUI first:
-1. In ComfyUI: Right-click canvas → Export to ComfySwap
-2. Then sync: `comfy-swap import --sync`
+After installing, user must restart ComfyUI.
 
-### Problem: Download blocked / network issue
+### Issue: "No workflows found"
 
-Ask user to manually download from: https://github.com/kamjin3086/comfy-swap/releases
+User needs to export a workflow from ComfyUI first:
+1. Tell user: "In ComfyUI, right-click canvas → Export to ComfySwap"
+2. After user exports, run: `comfy-swap import --sync`
 
 ---
 
-## Standard Workflow
+## Quick Setup (All-in-One)
 
-After installation is verified:
+If starting fresh, run the setup script which handles install + server + config:
+
+**Windows:**
+```powershell
+powershell -ExecutionPolicy Bypass -File "<skill_base>/scripts/setup.ps1" -ComfyUIUrl "http://localhost:8188"
+```
+
+**Linux/macOS:**
+```bash
+bash "<skill_base>/scripts/setup.sh" "http://localhost:8188"
+```
+
+---
+
+## Running Workflows
+
+Once check script shows no issues:
 
 ```bash
-# 1. Ensure server running
-comfy-swap serve -d
-
-# 2. List workflows
+# List available workflows
 comfy-swap list
 
-# 3. Check workflow parameters
+# View workflow parameters
 comfy-swap info <workflow_id>
 
-# 4. Run workflow
+# Run workflow and save output
 comfy-swap run <workflow_id> prompt="a cat" seed=42 --wait --save ./output/
 
-# 5. Verify output
+# Verify output files exist
 ls ./output/
 ```
 
-## Core Commands
-
-| Command | Purpose |
-|---------|---------|
-| `serve -d` | Start server as daemon |
-| `stop` | Stop server |
-| `health` | Check server + ComfyUI status |
-| `plugin-status` | Check plugin installation |
-| `install-plugin <path>` | Install ComfyUI plugin |
-| `list` | List workflows |
-| `info <id>` | Show workflow parameters |
-| `run <id> key=value --wait --save ./` | Execute workflow |
-| `import --sync` | Sync pending workflows from ComfyUI |
-| `logs` | View request history |
-
-## Parameter Format
+### Parameter Format
 
 ```bash
 prompt="text value"    # string
@@ -185,11 +124,45 @@ cfg=7.5                # float
 image=@./input.png     # image file (@ prefix)
 ```
 
-## When to Read Additional References
+### After Run Completes
+
+- Exit code 0 → success
+- Output JSON includes `prompt_id`, `status`, `files`
+- On failure: `comfy-swap logs --workflow <id> --limit 1`
+
+---
+
+## Core Commands
+
+| Command | Purpose |
+|---------|---------|
+| `serve -d` | Start server as daemon |
+| `stop` | Stop server |
+| `health` | Check status |
+| `list` | List workflows |
+| `info <id>` | Show parameters |
+| `run <id> key=value --wait --save ./` | Execute |
+| `import --sync` | Sync from ComfyUI |
+| `install-plugin <path>` | Install plugin |
+| `logs` | View history |
+
+---
+
+## Scripts Reference
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/check.ps1` / `check.sh` | Diagnose status, return issues and actions |
+| `scripts/install.ps1` / `install.sh` | Install or upgrade binary |
+| `scripts/setup.ps1` / `setup.sh` | Complete setup (install + server + config) |
+
+---
+
+## Additional References
 
 | Task | Read |
 |------|------|
-| Detailed setup guide | `references/setup.md` |
-| Remote ComfyUI setup | `references/setup.md` (Step 3) |
-| Modify workflow parameters | `references/workflow-management.md` |
+| Detailed setup | `references/setup.md` |
+| Remote ComfyUI | `references/setup.md` (Step 3) |
+| Workflow management | `references/workflow-management.md` |
 | Full CLI reference | `references/cli-reference.md` |
